@@ -13,12 +13,24 @@ cargo install sign-txs
 ## Requirements
 
 - `bitcoin-cli` available in PATH (for decoding transactions and fetching prevout info)
-- Docker with a running bitcoind container that has a loaded wallet
+- Docker with a running bitcoind container that has a loaded wallet (see **Setup** below for how to set this up)
 
 ## Usage
 
 ```sh
 sign-txs [OPTIONS] [INPUT_FILE]
+```
+
+You can produce a package of transactions to submit with:
+
+```sh
+tx_package=$(sign-txs [OPTIONS] [INPUT_FILE] | jq 'map(.bitcoin)')
+```
+
+Submit the package to the blockchain:
+
+```sh
+bitcoin-cli submitpackage "$tx_package"
 ```
 
 ### Arguments
