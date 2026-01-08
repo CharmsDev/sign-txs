@@ -14,9 +14,9 @@ struct Args {
     /// Input JSON file containing transactions (reads from stdin if not provided)
     input_file: Option<String>,
 
-    /// Docker container ID running bitcoind with the wallet
+    /// Docker container ID running bitcoind with the wallet (uses local bitcoin-cli if not provided)
     #[arg(long, env = "BITCOIND_CONTAINER")]
-    bitcoind_container: String,
+    bitcoind_container: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -120,7 +120,7 @@ fn get_prevout_info(txid: &str, vout: u32) -> Result<Option<(f64, String)>> {
     }
 }
 
-fn sign_transaction(container: &str, raw_tx: &str, tx_index: usize) -> Result<String> {
+fn sign_transaction(container: Option<&str>, raw_tx: &str, tx_index: usize) -> Result<String> {
     eprintln!("\nProcessing transaction {}...", tx_index + 1);
 
     // Decode the transaction to get inputs
@@ -171,12 +171,12 @@ fn sign_transaction(container: &str, raw_tx: &str, tx_index: usize) -> Result<St
 
     eprintln!("  Signing {} input(s) with wallet...", prevouts.len());
 
-    // Sign with the Docker wallet
+    // Sign with wallet (either via Docker or local bitcoin-cli)
     let prevouts_json = serde_json::to_string(&prevouts)?;
-    let sign_output = run_docker_btc(
-        container,
-        &["signrawtransactionwithwallet", raw_tx, &prevouts_json],
-    )?;
+    let sign_output = match container {
+        Some(c) => run_docker_btc(c, &["signrawtransactionwithwallet", raw_tx, &prevouts_json])?,
+        None => run_btc_cli(&["signrawtransactionwithwallet", raw_tx, &prevouts_json])?,
+    };
 
     let sign_result: SignResult =
         serde_json::from_str(&sign_output).context("Failed to parse sign result")?;
@@ -219,7 +219,7 @@ fn main() -> Result<()> {
     let mut signed_txs: Vec<TxEntry> = Vec::new();
 
     for (i, tx) in txs.iter().enumerate() {
-        let signed_hex = sign_transaction(&args.bitcoind_container, &tx.bitcoin, i)?;
+        let signed_hex = sign_transaction(args.bitcoind_container.as_deref(), &tx.bitcoin, i)?;
         signed_txs.push(TxEntry {
             bitcoin: signed_hex,
         });
