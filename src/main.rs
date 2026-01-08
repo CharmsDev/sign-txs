@@ -1,3 +1,4 @@
+use std::io::{self, Read};
 use std::process::Command;
 
 use anyhow::{bail, Context, Result};
@@ -8,11 +9,10 @@ const BTC_CLI: &str = "bitcoin-cli";
 
 #[derive(Parser)]
 #[command(name = "sign-txs")]
-#[command(about = "Sign Bitcoin transactions from a JSON file")]
+#[command(about = "Sign Bitcoin transactions from a JSON file or stdin")]
 struct Args {
-    /// Input JSON file containing transactions
-    #[arg(default_value = "txs.json")]
-    input_file: String,
+    /// Input JSON file containing transactions (reads from stdin if not provided)
+    input_file: Option<String>,
 
     /// Docker container ID running bitcoind with the wallet
     #[arg(long, env = "BITCOIND_CONTAINER")]
@@ -196,11 +196,23 @@ fn sign_transaction(container: &str, raw_tx: &str, tx_index: usize) -> Result<St
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    // Read input file
-    let content = std::fs::read_to_string(&args.input_file).context("Failed to read input file")?;
+    // Read input from file or stdin
+    let (content, source) = match &args.input_file {
+        Some(path) => {
+            let content = std::fs::read_to_string(path).context("Failed to read input file")?;
+            (content, path.as_str())
+        }
+        None => {
+            let mut content = String::new();
+            io::stdin()
+                .read_to_string(&mut content)
+                .context("Failed to read from stdin")?;
+            (content, "stdin")
+        }
+    };
     let txs: Vec<TxEntry> = serde_json::from_str(&content).context("Failed to parse input JSON")?;
 
-    eprintln!("Reading transactions from: {}", args.input_file);
+    eprintln!("Reading transactions from: {}", source);
     eprintln!("Found {} transaction(s) to process", txs.len());
 
     // Process each transaction
