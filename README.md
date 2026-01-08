@@ -66,6 +66,12 @@ sign-txs txs.json > signed.json
 
 ## Setup
 
+### Quick and Easy
+
+Create a `.env` file in `containers/` (see `.env.example`). Run `docker compose up -d`.
+
+### Detailed
+
 The [`containers/`](containers/) directory provides Docker configurations for both the nginx proxy and bitcoind signer. Configure and run both services:
 
 ```sh
@@ -96,8 +102,6 @@ docker run -d --name bitcoin-proxy -p 8332:8332 \
   -e PROXY_HOST=xxx-xxxxx-xxxx.btc.quiknode.pro \
   bitcoin-proxy
 ```
-
-Or create a `.env` file in `containers/` (see `.env.example`) and run `docker compose up -d`.
 
 Now `bitcoin-cli` can connect to the remote node:
 
