@@ -2,6 +2,8 @@
 name = "sign-txs"
 version = "0.1.0"
 edition = "2024"
+description = "Sign transactions with bitcoind in a container"
+license = "MIT"
 
 [dependencies]
 clap = { version = "4", features = ["derive", "env"] }
