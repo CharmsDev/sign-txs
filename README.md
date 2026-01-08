@@ -2,7 +2,7 @@
 
 Sign Bitcoin transactions using a bitcoind wallet running in a Docker container.
 
-This utility reads unsigned (or partially signed) transactions from a JSON file, fetches the required prevout information using a local `bitcoin-cli`, and signs them using a wallet in a dockerized bitcoind instance.
+This utility reads unsigned (or partially signed) transactions from a JSON file or stdin, fetches the required prevout information using a local `bitcoin-cli`, and signs them using a wallet in a dockerized bitcoind instance.
 
 ## Installation
 
@@ -35,7 +35,7 @@ bitcoin-cli submitpackage "$tx_package"
 
 ### Arguments
 
-- `INPUT_FILE` - JSON file containing transactions (default: `txs.json`)
+- `INPUT_FILE` - JSON file containing transactions (reads from stdin if not provided)
 
 ### Options
 
@@ -74,6 +74,12 @@ sign-txs --bitcoind-container abc123 txs.json > signed.json
 # Using environment variable
 export BITCOIND_CONTAINER=abc123
 sign-txs txs.json > signed.json
+
+# Reading from stdin
+cat txs.json | sign-txs --bitcoind-container abc123 > signed.json
+
+# Piping from another command
+some-command-that-outputs-json | sign-txs --bitcoind-container abc123 > signed.json
 ```
 
 ## Setup
